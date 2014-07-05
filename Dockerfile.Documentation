@@ -1,0 +1,24 @@
+# See the Dockerfile Documentation at http://docs.docker.com/reference/builder/
+
+# Start with a good base image:
+FROM phusion/baseimage  #ToDo: link this to a specific version
+
+# Update the base image and install wget
+RUN apt-get update && apt-get install -y wget
+
+# Every command creates a new 'intermediate' image
+# I am grouping commands together with && to create
+# meaningful intermediate images - probably not neccessary
+
+# Create a file to auto-accept the Oracle/Java license so that we are not prompted during installation
+# Then install Java 1.6 (update 45 as of this writing)
+RUN wget --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/6u45-b06/jdk-6u45-linux-x64.bin && chmod +x ./jdk-6u45-linux-x64.bin && ./jdk-6u45-linux-x64.bin && mv ./jdk1.6.0_45 /usr/lib/
+
+# Download the OpenLaszlo/Tomcat installation, unpack, and install it:
+RUN wget http://downloads.sourceforge.net/project/openlaszlo/5.0.x/openlaszlo-5.0.x-unix.tar.gz && tar -zxvf openlaszlo-5.0.x-unix.tar.gz && mv lps-5.0.x /var/lib/
+
+# Create the required files and export the required variables to start Tomcat/OpenLaszlo (See https://github.com/phusion/baseimage-docker)
+RUN mkdir /etc/service/lps && echo '#!/bin/sh' > /etc/service/lps/run && echo 'export JAVA_HOME=/usr/lib/jdk1.6.0_45' >> /etc/service/lps/run && echo '/var/lib/lps-5.0.x/Server/tomcat-5.0.24/bin/startup.sh && tail -F /var/lib/lps-5.0.x/Server/tomcat-5.0.24/logs/catalina.out' >> /etc/service/lps/run && chmod +x /etc/service/lps/run
+
+#Finally, expose the Tomcat port to the host:
+EXPOSE 8080
